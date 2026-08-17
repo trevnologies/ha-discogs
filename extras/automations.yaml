@@ -1,0 +1,10 @@
+# Add this automation (via automations.yaml or the UI).
+
+- id: refresh_discogs_on_change
+  alias: "Discogs - Refresh on Random Record Change"
+  triggers:
+    - trigger: state
+      entity_id: sensor.discogs_random_record
+  actions:
+    - action: script.refresh_discogs_record_and_cover
+  mode: restart

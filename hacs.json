@@ -1,0 +1,7 @@
+{
+  "name": "Discogs",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "discogs.zip",
+  "homeassistant": "2024.1.0"
+}
