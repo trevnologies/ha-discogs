@@ -1,0 +1,17 @@
+# Add this script (via scripts.yaml or the UI).
+
+refresh_discogs_record_and_cover:
+  alias: "Refresh Discogs Record and Cover"
+  mode: single
+  sequence:
+    - action: homeassistant.update_entity
+      target:
+        entity_id: sensor.discogs_random_record
+    - delay: "00:00:04"
+    - action: shell_command.sync_discogs_cover
+    - delay: "00:00:02"
+    - action: homeassistant.update_entity
+      target:
+        entity_id:
+          - sensor.discogs_release_id
+          - sensor.discogs_release_slug

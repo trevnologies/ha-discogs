@@ -1,0 +1,78 @@
+# Requires the card-mod and button-card custom cards (install both via
+# HACS -> Frontend first). Paste into a dashboard via Edit Dashboard ->
+# Add Card -> Manual.
+
+type: custom:mod-card
+card_mod:
+  style: |
+    ha-card {
+      background-image:
+        linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+        url('/local/discogs_cover.jpg?{{ states("input_text.discogs_image_timestamp") }}');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 92% auto;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: background-image 0.8s ease-in-out;
+      color: white;
+      font-weight: bold;
+      position: relative;
+    }
+    ha-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      backdrop-filter: blur(1px);
+      background: rgba(0,0,0,0.3);
+      z-index: 0;
+    }
+    ha-card > * { position: relative; z-index: 1; }
+card:
+  type: vertical-stack
+  cards:
+    - type: horizontal-stack
+      cards:
+        - type: markdown
+          content: "### Discogs Collection &nbsp; 🎶"
+          card_mod:
+            style: "ha-card { background: none; box-shadow: none; padding: 0px; font-size: 23px; margin: 0; }"
+        - type: custom:button-card
+          icon: mdi:refresh
+          tap_action:
+            action: call-service
+            service: script.refresh_discogs_record_and_cover
+          styles:
+            card:
+              - width: 70px
+              - height: 70px
+              - background: none
+              - box-shadow: none
+              - padding: 0
+              - transition: transform 0.3s ease
+            icon:
+              - color: white
+            card:hover:
+              - transform: scale(1.2)
+    - type: entities
+      entities:
+        - entity: sensor.discogs_collection
+          name: Collection
+        - entity: sensor.discogs_wantlist
+          name: Wantlist
+      card_mod:
+        style: "ha-card { background: none; box-shadow: none; } .card-content { font-size: 1.2rem; }"
+    - type: entities
+      entities:
+        - entity: sensor.discogs_random_record
+          name: Featuring
+      card_mod:
+        style: "ha-card { background: none; box-shadow: none; font-size: 1.2rem; color: white; }"
+    - type: markdown
+      content: >
+        🔎 [View this release on Discogs](https://www.discogs.com/release/{{ states('sensor.discogs_release_id') }}-{{ states('sensor.discogs_release_slug') }})
+      card_mod:
+        style: "ha-card { background: none; box-shadow: none; text-align: center; margin-top: 8px; }"

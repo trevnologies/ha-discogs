@@ -1,0 +1,18 @@
+# Add these blocks to your configuration.yaml.
+#
+# NOTE: the two "Local File" sensors (sensor.discogs_release_id and
+# sensor.discogs_release_slug) are NOT included here - that integration
+# is config-entry based and has no YAML schema. Set those up via
+# Settings -> Devices & Services -> Add Integration -> "Local File".
+# See extras/README.md step 5 for details.
+
+sensor:
+  - platform: discogs
+    token: !secret discogs_token
+    monitored_conditions:
+      - collection
+      - wantlist
+      - random_record
+
+shell_command:
+  sync_discogs_cover: bash /config/scripts/discogs_random_record_sync.sh
