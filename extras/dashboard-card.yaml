@@ -7,8 +7,8 @@ card_mod:
   style: |
     ha-card {
       background-image:
-        linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
-        url('/local/discogs_cover.jpg?{{ states("input_text.discogs_image_timestamp") }}');
+      linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+      url('/local/discogs_cover.jpg?{{ states("input_text.discogs_image_timestamp") }}');
       background-repeat: no-repeat;
       background-position: center;
       background-size: 92% auto;
@@ -25,21 +25,38 @@ card_mod:
     ha-card::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       backdrop-filter: blur(1px);
-      background: rgba(0,0,0,0.3);
+      background: rgba(0, 0, 0, 0.3);
       z-index: 0;
     }
-    ha-card > * { position: relative; z-index: 1; }
+    ha-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    ::slotted(*:first-child) {
+      width: 100%;
+    }
 card:
   type: vertical-stack
   cards:
     - type: horizontal-stack
       cards:
         - type: markdown
-          content: "### Discogs Collection &nbsp; 🎶"
+          content: |
+            ### Discogs Collection &nbsp; 🎶 
           card_mod:
-            style: "ha-card { background: none; box-shadow: none; padding: 0px; font-size: 23px; margin: 0; }"
+            style: |
+              ha-card {
+                background: none;
+                box-shadow: none;
+                padding: 0px;
+                font-size: 23px;
+                margin: 0;
+              }
         - type: custom:button-card
           icon: mdi:refresh
           tap_action:
@@ -51,6 +68,7 @@ card:
               - height: 70px
               - background: none
               - box-shadow: none
+              - margin: 0px 0px 0 0
               - padding: 0
               - transition: transform 0.3s ease
             icon:
@@ -64,15 +82,68 @@ card:
         - entity: sensor.discogs_wantlist
           name: Wantlist
       card_mod:
-        style: "ha-card { background: none; box-shadow: none; } .card-content { font-size: 1.2rem; }"
+        style: |
+          ha-card {
+            background: none;
+            box-shadow: none;
+          }
+          .card-content {
+            font-size: 1.2rem;
+          }
+          hui-generic-entity-row .info {
+            white-space: normal !important;
+            flex: 0 0 160px !important;
+            max-width: 160px;
+          }
+          hui-generic-entity-row .text-content {
+            white-space: normal !important;
+          }
+          hui-generic-entity-row .entity {
+            flex-shrink: 0;
+          }
     - type: entities
       entities:
         - entity: sensor.discogs_random_record
           name: Featuring
       card_mod:
-        style: "ha-card { background: none; box-shadow: none; font-size: 1.2rem; color: white; }"
+        style: |
+          ha-card {
+            background: none;
+            box-shadow: none;
+            font-size: 1.2rem;
+            padding: 0px 0px;
+            color: white;
+            display: flex;
+            align-items: left;
+            margin: 0px 0px 0px 0px;
+          }
+          .card-content {
+            font-size: 1.2rem;
+            white-space: normal !important;
+            overflow: visible;
+          }
+          hui-generic-entity-row .info {
+            white-space: normal !important;
+            flex: 0 0 160px !important;
+            max-width: 160px;
+          }
+          hui-generic-entity-row .text-content {
+            white-space: normal !important;
+          }
+          hui-generic-entity-row .entity {
+            flex-shrink: 0;
+          }
     - type: markdown
       content: >
-        🔎 [View this release on Discogs](https://www.discogs.com/release/{{ states('sensor.discogs_release_id') }}-{{ states('sensor.discogs_release_slug') }})
+        🔎 [View this release on Discogs](https://www.discogs.com/release/{{
+        states('sensor.discogs_release_id') }}-{{
+        states('sensor.discogs_release_slug') }})
       card_mod:
-        style: "ha-card { background: none; box-shadow: none; text-align: center; margin-top: 8px; }"
+        style: |
+          ha-card {
+            background: none;
+            box-shadow: none;
+            text-align: center;
+            font-size: 1rem;
+            margin-top: 8px;
+          }

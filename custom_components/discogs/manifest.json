@@ -1,8 +1,8 @@
 {
   "domain": "discogs",
   "name": "Discogs",
-  "version": "1.0.1",
-  "codeowners": ["@thibmaek"],
+  "version": "1.0.2",
+  "codeowners": ["@thibmaek", "@trevnologies"],
   "documentation": "https://www.home-assistant.io/integrations/discogs",
   "iot_class": "cloud_polling",
   "loggers": ["discogs_client"],
