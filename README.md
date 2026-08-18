@@ -55,6 +55,30 @@ in `extras/` (below), all three are required — the card reads
 `sensor.discogs_random_record` directly, so trimming this list down
 will silently break it.
 
+### Adjusting the refresh interval
+
+The integration polls Discogs every hour by default. To change that,
+add `scan_interval` to the platform config — this is a built-in option
+on all legacy YAML-platform sensors, not something specific to this
+integration, so no code changes are needed:
+
+```yaml
+sensor:
+  - platform: discogs
+    token: !secret discogs_token
+    scan_interval: "00:30:00"   # HH:MM:SS, or a plain number of seconds
+    monitored_conditions:
+      - collection
+      - wantlist
+      - random_record
+```
+
+If you're using the `extras/` dashboard pipeline, this interval is
+also what paces the whole card-refresh chain — the automation in
+`extras/automations.yaml` triggers off `sensor.discogs_random_record`
+changing state, so a shorter `scan_interval` means the cover art
+refreshes more often too.
+
 ## Optional: dashboard card + auto-refreshing cover art
 
 See [`extras/README.md`](extras/README.md) for the full setup — an
