@@ -1,17 +1,53 @@
-# Add this script (via scripts.yaml or the UI).
+# extras/scripts.yaml
 
-refresh_discogs_record_and_cover:
-  alias: "Refresh Discogs Record and Cover"
-  mode: single
-  sequence:
-    - action: homeassistant.update_entity
-      target:
-        entity_id: sensor.discogs_random_record
-    - delay: "00:00:04"
-    - action: shell_command.sync_discogs_cover
-    - delay: "00:00:02"
-    - action: homeassistant.update_entity
-      target:
-        entity_id:
-          - sensor.discogs_release_id
-          - sensor.discogs_release_slug
+# Add BOTH of these scripts (via scripts.yaml or the UI).
+#
+# If adding via the UI's "Edit in YAML" mode for a single script, use
+# just the alias/mode/sequence body below (no top-level key) - the
+# script's ID comes from what you name it when creating it. The
+# top-level key format here (e.g. "refresh_discogs_record_and_cover:")
+# is for editing scripts.yaml directly as a file.
+#
+# Two scripts, not one - important. refresh_discogs_record_and_cover
+# forces a brand-new random pick (used by the dashboard's refresh
+# button). sync_discogs_cover_only does NOT force a new pick - it only
+# syncs cover art for whatever record already triggered the automation.
+#
+# Why this split exists: the automation in automations.yaml triggers on
+# ANY state change of sensor.discogs_random_record. If that automation
+# called refresh_discogs_record_and_cover (which forces a new pick), the
+# new pick would itself be a state change, re-firing the automation,
+# forcing yet another pick, forever - a self-sustaining loop that burns
+# through dozens of Discogs API calls in under a minute every time the
+# sensor's hourly poll fires. sync_discogs_cover_only breaks the loop
+# by never forcing a re-poll, so the automation has nothing left to
+# react to after it runs once.
+
+# Script 1 -  Refresh Discogs Record and Cover
+alias: Refresh Discogs Record and Cover
+mode: single
+sequence:
+  - target:
+      entity_id: sensor.discogs_random_record
+    action: homeassistant.update_entity
+  - delay: '00:00:04'
+  - action: shell_command.sync_discogs_cover
+  - delay: '00:00:02'
+  - target:
+      entity_id:
+        - sensor.discogs_release_id
+        - sensor.discogs_release_slug
+    action: homeassistant.update_entity
+
+# Script 2 - Sync Discogs Cover Only
+alias: Sync Discogs Cover Only
+mode: single
+sequence:
+  - action: shell_command.sync_discogs_cover
+  - delay: '00:00:02'
+  - action: homeassistant.update_entity
+    target:
+      entity_id:
+        - sensor.discogs_release_id
+        - sensor.discogs_release_slug
+description: Sync Discogs Cover (triggered by record change)

@@ -1,3 +1,5 @@
+# extras/README.md
+
 # Extras — Discogs Dashboard Pipeline
 
 The `custom_components/discogs/` integration only gets you three sensors
@@ -110,17 +112,53 @@ Settings → Devices & Services → Helpers → Add Helper → **Text**:
 - Used purely as a cache-busting query param on the cover image URL; the
   actual value doesn't matter, it just needs to exist and be writable.
 
-## 7. Automation
+## 7. Automations
 
-See `automations.yaml`. Fires whenever the random-record sensor's hourly
-poll picks a new record, kicking off the cover-sync chain below.
+See `automations.yaml` — there are two:
 
-## 8. Script
+- **"Discogs - Refresh on Random Record Change"** — fires whenever the
+  random-record sensor's hourly poll picks a new record, kicking off
+  the cover-sync chain below. **Important:** this one calls
+  `script.sync_discogs_cover_only`, not
+  `script.refresh_discogs_record_and_cover` — see step 8 for why the
+  distinction matters. Calling the wrong script here creates a
+  self-sustaining feedback loop that fires dozens of Discogs API calls
+  in under a minute, every time the sensor's hourly poll runs.
+- **"Discogs - Refresh on Home Assistant Start"** — fires once, only
+  on HA startup, forcing a fresh pick so the dashboard doesn't show
+  stale pre-restart data. This one *is* safe to point at
+  `script.refresh_discogs_record_and_cover` (the force-a-new-pick
+  script) — the `homeassistant.start` event only fires once per boot,
+  so it can't re-trigger itself. The pick it forces cascades through
+  the automation above exactly once, then stops.
 
-See `scripts.yaml`. The 4-second delay gives the Discogs sensor's own
-update time to land before the shell script reads it; the 2-second delay
-gives the shell script time to finish writing the two text files before
-the file sensors are force-refreshed.
+Optional cosmetic step: both automations use a custom icon,
+`mdi:record-player`, instead of HA's default automation icon. This is
+a UI-only setting (icon overrides aren't part of automation YAML) —
+set via each automation's ⋮ menu → Icon, if you want to match.
+
+## 8. Scripts
+
+See `scripts.yaml` — there are two, and the split is deliberate:
+
+- **`refresh_discogs_record_and_cover`** — forces a brand-new random
+  pick, then syncs cover art. Used by the dashboard card's refresh
+  button (step 9), where forcing a new pick is exactly what you want.
+- **`sync_discogs_cover_only`** — syncs cover art for whatever record
+  is *already* current, without forcing a new pick. Used by the
+  automation in step 7.
+
+Why two scripts: the automation triggers on *any* state change of
+`sensor.discogs_random_record`. If it called the force-a-new-pick
+script, that new pick would itself be a state change, re-triggering the
+same automation, forcing another pick, forever — an infinite loop.
+Routing the automation through the non-forcing script breaks that
+cycle: it has nothing left to react to after running once.
+
+In both scripts, the 4-second delay (where present) gives the Discogs
+sensor's own update time to land before the shell script reads it; the
+2-second delay gives the shell script time to finish writing the two
+text files before the file sensors are force-refreshed.
 
 ## 9. Dashboard card
 
