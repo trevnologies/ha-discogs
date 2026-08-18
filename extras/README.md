@@ -41,6 +41,12 @@ Restart Home Assistant. Confirm `sensor.discogs_collection`,
 `sensor.discogs_wantlist`, and `sensor.discogs_random_record` all show up
 with real values before continuing.
 
+Want a different refresh cadence than the hourly default? See the
+"Adjusting the refresh interval" section in the top-level README —
+`scan_interval` also controls how often this whole extras pipeline
+fires, since everything below is triggered off `sensor.discogs_random_record`
+changing state.
+
 ## 3. Cover-sync script
 
 Copy `discogs_random_record_sync.sh` to `/config/scripts/` and make it
@@ -98,6 +104,9 @@ based and has no YAML schema:
 
 Settings → Devices & Services → Helpers → Add Helper → **Text**:
 - Entity ID: `input_text.discogs_image_timestamp`
+- Name: `Discogs Image Timestamp`
+- Icon: `mdi:clock-digital`
+- Min/max length: defaults are fine (0 / 100)
 - Used purely as a cache-busting query param on the cover image URL; the
   actual value doesn't matter, it just needs to exist and be writable.
 
