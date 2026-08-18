@@ -1,10 +1,34 @@
-# Add this automation (via automations.yaml or the UI).
+# extras/automations.yaml
 
-- id: refresh_discogs_on_change
-  alias: "Discogs - Refresh on Random Record Change"
-  triggers:
-    - trigger: state
-      entity_id: sensor.discogs_random_record
-  actions:
-    - action: script.refresh_discogs_record_and_cover
-  mode: restart
+# Add BOTH of these automations (via automations.yaml or the UI).
+
+# Automation 1 - fires on every state change of sensor.discogs_random_record
+# (i.e. every hourly poll that picks a new record).
+#
+# Calls sync_discogs_cover_triggered_by_record_change, NOT
+# refresh_discogs_record_and_cover - see the comment at the top of
+# scripts.yaml for why. Using the wrong one here creates an infinite
+# feedback loop: forcing a new random pick is itself a state change,
+# which re-triggers this same automation.
+alias: Discogs - Refresh on Random Record Change
+triggers:
+  - entity_id: sensor.discogs_random_record
+    trigger: state
+actions:
+  - action: script.sync_discogs_cover_only
+mode: restart
+
+# Automation 2 - fires once, on Home Assistant startup only. Safe to use
+# the force-a-new-pick script here: the homeassistant.start event fires
+# exactly once per boot, so this can never re-trigger itself. It forces
+# one fresh pick so the dashboard isn't showing stale pre-restart data;
+# that pick's state change then correctly cascades through Automation 1
+# above exactly once, and stops there.
+alias: Discogs - Refresh on Home Assistant Start
+description: ''
+triggers:
+  - event: start
+    trigger: homeassistant
+actions:
+  - action: script.refresh_discogs_record_and_cover
+mode: single
