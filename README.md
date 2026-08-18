@@ -1,6 +1,7 @@
 # Discogs for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=trevnologies&repository=ha-discogs-addon&category=integration)
 
 Home Assistant sensor integration for Discogs — collection count, wantlist
 count, and a random record suggestion from your collection.
@@ -12,12 +13,21 @@ integration.
 
 ## Installation
 
-### HACS
-1. Add this repository as a custom repository in HACS (category: Integration)
-2. Search for "Discogs" and install
-3. Restart Home Assistant
+### HACS (one click)
+Click the "Open your Home Assistant instance" badge above — it opens
+your HA instance directly to the "add custom repository" dialog with
+this repo pre-filled. Confirm, then find "Discogs" in HACS and install.
 
-### Manual
+Requires [My Home Assistant](https://www.home-assistant.io/integrations/my/)
+to be configured on your instance (on by default for most setups).
+
+### HACS (manual)
+1. HACS → Integrations → ⋮ (top right) → Custom repositories
+2. Repository: `https://github.com/trevnologies/ha-discogs-addon`, Category: Integration
+3. Search for "Discogs" and install
+4. Restart Home Assistant
+
+### Manual (no HACS)
 Copy `custom_components/discogs` into your `/config/custom_components/`
 directory and restart Home Assistant.
 
@@ -26,11 +36,24 @@ directory and restart Home Assistant.
 ```yaml
 sensor:
   - platform: discogs
-    token: YOUR_DISCOGS_TOKEN
+    token: !secret discogs_token
+    monitored_conditions:
+      - collection
+      - wantlist
+      - random_record
 ```
 
 Get a personal access token from your
-[Discogs developer settings](https://www.discogs.com/settings/developers).
+[Discogs developer settings](https://www.discogs.com/settings/developers)
+and add it to `secrets.yaml` as `discogs_token`.
+
+`monitored_conditions` is technically optional — it defaults to all
+three (`collection`, `wantlist`, `random_record`) if omitted. It's
+shown explicitly here because if you plan to use the dashboard card
+in `extras/` (below), all three are required — the card reads
+`sensor.discogs_collection`, `sensor.discogs_wantlist`, and
+`sensor.discogs_random_record` directly, so trimming this list down
+will silently break it.
 
 ## Optional: dashboard card + auto-refreshing cover art
 
