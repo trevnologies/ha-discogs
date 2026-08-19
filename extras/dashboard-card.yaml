@@ -58,7 +58,7 @@ card:
                 margin: 0;
               }
         - type: custom:button-card
-          icon: mdi:refresh
+          icon: mdi:shuffle-variant
           tap_action:
             action: call-service
             service: script.refresh_discogs_record_and_cover
