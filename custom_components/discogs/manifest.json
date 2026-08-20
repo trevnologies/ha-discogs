@@ -1,12 +1,12 @@
 {
   "domain": "discogs",
   "name": "Discogs",
-  "version": "1.0.2",
   "codeowners": ["@thibmaek", "@trevnologies"],
   "documentation": "https://github.com/trevnologies/ha-discogs-addon",
-  "issue_tracker": "https://github.com/trevnologies/ha-discogs-addon/issues",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/trevnologies/ha-discogs-addon/issues",
   "loggers": ["discogs_client"],
   "quality_scale": "legacy",
-  "requirements": ["discogs-client==2.3.0"]
+  "requirements": ["discogs-client==2.3.0"],
+  "version": "1.0.2"
 }
