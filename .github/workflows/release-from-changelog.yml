@@ -18,6 +18,7 @@ permissions:
 
 env:
   CHANGELOG_PATH: custom_components/discogs/CHANGELOG.md
+  MANIFEST_PATH: custom_components/discogs/manifest.json
 
 jobs:
   release:
@@ -76,7 +77,10 @@ jobs:
           fi
 
       # Builds the badge with the tag baked in, so it always matches
-      # whatever version this specific release actually is.
+      # whatever version this specific release actually is. This only
+      # reflects real installs because hacs.json sets zip_release: true
+      # with filename: discogs.zip — HACS downloads that named asset
+      # directly instead of the tag's auto-generated source zipball.
       - name: Assemble release body
         run: |
           VERSION="${{ steps.changelog.outputs.version }}"
@@ -101,18 +105,33 @@ jobs:
             git push origin "${VERSION}"
           fi
 
-      # No zip build step here on purpose: hacs.json doesn't set
-      # zip_release, so HACS just checks out this repo at the release
-      # tag and copies custom_components/discogs/ directly. That's the
-      # right default for a plain Python integration with no build step.
+      # Patches manifest.json's version field to match the release tag,
+      # in this ephemeral checkout only — nothing is committed back to
+      # main. Keeps the zipped asset's manifest honest even if the
+      # committed manifest.json hasn't been bumped yet.
+      - name: Sync manifest version for zip
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          jq --arg v "$VERSION" '.version = $v' "$MANIFEST_PATH" > /tmp/manifest.json
+          mv /tmp/manifest.json "$MANIFEST_PATH"
+
+      # Packages custom_components/discogs as the named zip asset that
+      # hacs.json's zip_release/filename point at. This is what makes
+      # HACS installs/updates hit an actual downloadable GitHub asset
+      # instead of the invisible auto-generated source zipball.
+      - name: Build release zip
+        run: |
+          cd custom_components/discogs
+          zip -r ../../discogs.zip ./
 
       # Creates the release if the tag is new, or updates the existing
-      # release's notes/badge in place if it's already there.
+      # release's notes/badge/asset in place if it's already there.
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: ${{ steps.changelog.outputs.version }}
           name: ${{ steps.changelog.outputs.version }}
           body_path: full_release_body.md
+          files: discogs.zip
           draft: false
           prerelease: false
