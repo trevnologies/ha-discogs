@@ -87,7 +87,7 @@ jobs:
           {
             cat release_notes.md
             echo ""
-            echo "[![GitHub All Releases](https://img.shields.io/github/downloads/trevnologies/ha-discogs-addon/${VERSION}/total.svg)](https://github.com/trevnologies/ha-discogs-addon/releases/tag/${VERSION})"
+            echo "[![GitHub All Releases](https://img.shields.io/github/downloads/trevnologies/ha-discogs-addon/${VERSION}/total.svg)](https://github.com/trevnologies/ha-discogs-addon/releases/${VERSION})"
           } > full_release_body.md
 
       # Creates the tag only if it doesn't already exist on the remote,
