@@ -1,7 +1,7 @@
 # Discogs for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=trevnologies&repository=ha-discogs-addon&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=trevnologies&repository=ha-discogs&category=integration)
 
 <p align="center">
   <table>
@@ -36,7 +36,7 @@ to be configured on your instance (on by default for most setups).
 
 ### HACS (manual)
 1. HACS → Integrations → ⋮ (top right) → Custom repositories
-2. Repository: `https://github.com/trevnologies/ha-discogs-addon`, Category: Integration
+2. Repository: `https://github.com/trevnologies/ha-discogs`, Category: Integration
 3. Search for "Discogs" and install
 4. Restart Home Assistant
 
