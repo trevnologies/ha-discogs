@@ -1,9 +1,14 @@
 name: Validate
 
-# Runs on every push/PR, plus a daily schedule so a HACS or hassfest
-# spec change upstream gets caught even if nothing here changed.
+# Runs on PRs and pushes to main, plus a daily schedule so a HACS or
+# hassfest spec change upstream gets caught even if nothing here changed.
+# push: is scoped to main (matching codeql.yml) so a push to a PR's own
+# branch doesn't ALSO satisfy an unscoped push trigger -- that's what was
+# causing Hassfest/HACS to run twice per PR (push + pull_request on the
+# same commit).
 on:
   push:
+    branches: ["main"]
   pull_request:
   schedule:
     - cron: "0 0 * * *"
@@ -16,6 +21,8 @@ jobs:
   hassfest:
     name: Hassfest
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,6 +33,8 @@ jobs:
   hacs:
     name: HACS
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
