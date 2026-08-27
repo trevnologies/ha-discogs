@@ -1,0 +1,47 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  analyze:
+    name: "Analyze (${{ matrix.language }})"
+    runs-on: "ubuntu-latest"
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+
+    steps:
+      - uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+
+      - name: "Initialize CodeQL"
+        uses: "github/codeql-action/init@v4"
+        # codeql-action is intentionally left on a floating major tag rather
+        # than pinned to a SHA, per GitHub's own guidance: pinning this one
+        # can leave you on a stale CodeQL CLI/ruleset as server-side feature
+        # flags age out. Every other action in this repo's workflows is
+        # pinned; this is a deliberate, documented exception.
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: "Perform CodeQL Analysis"
+        uses: "github/codeql-action/analyze@v4"
+        with:
+          category: "/language:${{ matrix.language }}"
