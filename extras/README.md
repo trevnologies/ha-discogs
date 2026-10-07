@@ -13,41 +13,25 @@ one-time setup on top of it.
 Setup order matters — later steps depend on entities/helpers created in
 earlier ones.
 
-## 1. Discogs token
+## 1. Discogs integration
 
-Get a personal access token from your
-[Discogs developer settings](https://www.discogs.com/settings/developers),
-then add it to `secrets.yaml`:
+Set up the integration from the UI: Settings → Devices & services → Add
+integration → **Discogs**, using a personal access token from your
+[Discogs developer settings](https://www.discogs.com/settings/developers).
+Leave **Name** as `Discogs` — everything below expects the entity IDs that
+name produces.
 
-```yaml
-# secrets.yaml
-discogs_token: your_token_here
-```
+Confirm `sensor.discogs_collection`, `sensor.discogs_wantlist`, and
+`sensor.discogs_random_record` all show up with real values before
+continuing. (Upgrading from a YAML setup? It's imported automatically and
+keeps these IDs — see "Upgrading from YAML" in the top-level README.)
 
-## 2. Discogs sensor platform
+## 2. Refresh cadence (optional)
 
-Add to `configuration.yaml` (also in `configuration-snippet.yaml` in
-this folder):
-
-```yaml
-sensor:
-  - platform: discogs
-    token: !secret discogs_token
-    monitored_conditions:
-      - collection
-      - wantlist
-      - random_record
-```
-
-Restart Home Assistant. Confirm `sensor.discogs_collection`,
-`sensor.discogs_wantlist`, and `sensor.discogs_random_record` all show up
-with real values before continuing.
-
-Want a different refresh cadence than the hourly default? See the
-"Adjusting the refresh interval" section in the top-level README —
-`scan_interval` also controls how often this whole extras pipeline
-fires, since everything below is triggered off `sensor.discogs_random_record`
-changing state.
+Want a different refresh cadence than the hourly default? Open the
+Discogs integration and click **Configure**. That interval also controls
+how often this whole extras pipeline fires, since everything below is
+triggered off `sensor.discogs_random_record` changing state.
 
 ## 3. Cover-sync script
 
@@ -155,9 +139,9 @@ same automation, forcing another pick, forever — an infinite loop.
 Routing the automation through the non-forcing script breaks that
 cycle: it has nothing left to react to after running once.
 
-In both scripts, the 4-second delay (where present) gives the Discogs
-sensor's own update time to land before the shell script reads it; the
-2-second delay gives the shell script time to finish writing the two
+In both scripts, the 4-second delay (where present) is a safety margin
+for the Discogs refresh to land before the shell script reads the sensor;
+the 2-second delay gives the shell script time to finish writing the two
 text files before the file sensors are force-refreshed.
 
 ## 9. Dashboard card
