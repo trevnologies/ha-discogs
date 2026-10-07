@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.3
+
+### Fixed
+- Hassfest validation failing on the `discogs-client` requirement.
+  Home Assistant core depends on the same package, and hassfest now
+  rejects exact (`==`) pins on core dependencies. The requirement is
+  now `discogs-client>=2.3.0`, so the integration follows whatever
+  version Home Assistant ships instead of conflicting with it when
+  core updates the library.
+
+### Changed
+- `documentation` and `issue_tracker` links in `manifest.json` now
+  point to `trevnologies/ha-discogs` instead of the old
+  `ha-discogs-addon` repo name.
+
 ## 1.0.2
 
 ### Fixed
