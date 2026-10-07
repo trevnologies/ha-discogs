@@ -1,4 +1,4 @@
 # Test dependencies for the Discogs integration. pytest-homeassistant-custom-component
 # pins a matching homeassistant release; Dependabot bumps it weekly.
-pytest-homeassistant-custom-component==0.13.367
+pytest-homeassistant-custom-component==0.13.368
 discogs-client==2.3.0
