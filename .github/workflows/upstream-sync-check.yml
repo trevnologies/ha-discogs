@@ -1,0 +1,39 @@
+name: Check upstream Discogs sync
+
+# Flags -- but never merges -- changes to home-assistant/core's built-in
+# discogs integration, so drift between core and this fork doesn't go
+# unnoticed. Findings are posted to an issue labeled `upstream-sync`; the
+# last-seen upstream commit is stored as a hidden marker in that issue, so
+# this workflow never needs to push to main (which the branch rulesets
+# block anyway).
+
+on:
+  schedule:
+    - cron: "17 13 * * 1" # Mondays, 13:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    name: Check upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Report new upstream commits
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          UPSTREAM_PATH: homeassistant/components/discogs
+          # Starting point for the very first run only (core `dev` at the
+          # time the 1.1.0 config-flow port was made). After that, the
+          # marker in the tracking issue takes over.
+          BASELINE_DATE: "2026-10-07T02:34:43Z"
+        with:
+          script: |
+            const run = require("./.github/scripts/upstream_sync.js");
+            await run({ github, context, core });

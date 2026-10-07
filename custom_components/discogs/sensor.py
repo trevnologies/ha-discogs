@@ -1,71 +1,69 @@
-"""Show the amount of records in a user's Discogs collection."""
+"""Discogs collection, wantlist, and random record sensors."""
 
 from __future__ import annotations
 
-from datetime import timedelta
-from json import JSONDecodeError
-import logging
-import random
-
-import discogs_client
-from requests.exceptions import RequestException
-import voluptuous as vol
+from typing import Any
 
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA as SENSOR_PLATFORM_SCHEMA,
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.const import CONF_MONITORED_CONDITIONS, CONF_NAME, CONF_TOKEN
-from homeassistant.core import HomeAssistant
+from homeassistant.const import (
+    CONF_MONITORED_CONDITIONS,
+    CONF_NAME,
+    CONF_SCAN_INTERVAL,
+    CONF_TOKEN,
+)
+from homeassistant.core import DOMAIN as HOMEASSISTANT_DOMAIN, HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.aiohttp_client import SERVER_SOFTWARE
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from homeassistant.util import dt as dt_util
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-_LOGGER = logging.getLogger(__name__)
+from .compat import platform_vol as vol
+from .const import (
+    CONF_EXCLUDED_SENSORS,
+    DEFAULT_NAME,
+    DOMAIN,
+    SENSOR_COLLECTION_TYPE,
+    SENSOR_KEYS,
+    SENSOR_RANDOM_RECORD_TYPE,
+    SENSOR_WANTLIST_TYPE,
+)
+from .coordinator import DiscogsConfigEntry, DiscogsCoordinator
 
 ATTR_IDENTITY = "identity"
-
-DEFAULT_NAME = "Discogs"
 
 ICON_RECORD = "mdi:album"
 ICON_PLAYER = "mdi:record-player"
 UNIT_RECORDS = "records"
 
-SCAN_INTERVAL = timedelta(hours=1)
-
-# Minimum gap between real API refreshes. All 3 entities' update() calls
-# land within the same scan cycle (seconds apart), so this collapses what
-# used to be 3 redundant identity/collection_folders fetches into 1 per scan.
-MIN_REFRESH_INTERVAL = timedelta(seconds=55)
-
-SENSOR_COLLECTION_TYPE = "collection"
-SENSOR_WANTLIST_TYPE = "wantlist"
-SENSOR_RANDOM_RECORD_TYPE = "random_record"
-
 SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key=SENSOR_COLLECTION_TYPE,
-        name="Collection",
+        translation_key=SENSOR_COLLECTION_TYPE,
         icon=ICON_RECORD,
         native_unit_of_measurement=UNIT_RECORDS,
     ),
     SensorEntityDescription(
         key=SENSOR_WANTLIST_TYPE,
-        name="Wantlist",
+        translation_key=SENSOR_WANTLIST_TYPE,
         icon=ICON_RECORD,
         native_unit_of_measurement=UNIT_RECORDS,
     ),
     SensorEntityDescription(
         key=SENSOR_RANDOM_RECORD_TYPE,
-        name="Random Record",
+        translation_key=SENSOR_RANDOM_RECORD_TYPE,
         icon=ICON_PLAYER,
     ),
 )
-SENSOR_KEYS: list[str] = [desc.key for desc in SENSOR_TYPES]
 
+# Legacy YAML schema, kept only so existing configurations validate and can
+# be imported into a config entry on startup.
 PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_TOKEN): cv.string,
@@ -77,148 +75,141 @@ PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
 )
 
 
-def setup_platform(
+async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
-    add_entities: AddEntitiesCallback,
+    async_add_entities: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up the Discogs sensor."""
-    token = config[CONF_TOKEN]
-    name = config[CONF_NAME]
+    """Import a legacy YAML configuration into a config entry."""
+    monitored = config.get(CONF_MONITORED_CONDITIONS, SENSOR_KEYS)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "import"},
+        data={
+            CONF_TOKEN: config[CONF_TOKEN],
+            CONF_NAME: config.get(CONF_NAME, DEFAULT_NAME),
+            CONF_SCAN_INTERVAL: config.get(CONF_SCAN_INTERVAL),
+            CONF_EXCLUDED_SENSORS: [k for k in SENSOR_KEYS if k not in monitored],
+        },
+    )
 
-    try:
-        _discogs_client = discogs_client.Client(SERVER_SOFTWARE, user_token=token)
-        identity = _discogs_client.identity()
-
-        discogs_data = {
-            "user": identity.name,
-            "folders": identity.collection_folders,
-            "collection_count": identity.num_collection,
-            "wantlist_count": identity.num_wantlist,
-            "token": token,
-            "last_fetched": dt_util.utcnow(),
-        }
-    except discogs_client.exceptions.HTTPError:
-        _LOGGER.error("API token is not valid")
+    if (
+        result.get("type") is FlowResultType.ABORT
+        and result.get("reason") != "already_configured"
+    ):
+        issue = (
+            "deprecated_yaml_import_issue_invalid_auth"
+            if result.get("reason") == "invalid_auth"
+            else "deprecated_yaml_import_issue_cannot_connect"
+        )
+        async_create_issue(
+            hass,
+            DOMAIN,
+            issue,
+            is_fixable=False,
+            issue_domain=DOMAIN,
+            severity=IssueSeverity.WARNING,
+            translation_key=issue,
+            translation_placeholders={
+                "domain": DOMAIN,
+                "integration_title": DEFAULT_NAME,
+            },
+        )
         return
 
-    monitored_conditions = config[CONF_MONITORED_CONDITIONS]
-    entities = [
-        DiscogsSensor(discogs_data, name, description)
+    async_create_issue(
+        hass,
+        HOMEASSISTANT_DOMAIN,
+        f"deprecated_yaml_{DOMAIN}",
+        is_fixable=False,
+        issue_domain=DOMAIN,
+        severity=IssueSeverity.WARNING,
+        translation_key="deprecated_yaml",
+        translation_placeholders={
+            "domain": DOMAIN,
+            "integration_title": DEFAULT_NAME,
+        },
+    )
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: DiscogsConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Discogs sensors from a config entry."""
+    excluded = set(entry.data.get(CONF_EXCLUDED_SENSORS, []))
+    async_add_entities(
+        DiscogsSensor(
+            entry.runtime_data, entry, description, description.key not in excluded
+        )
         for description in SENSOR_TYPES
-        if description.key in monitored_conditions
-    ]
-
-    add_entities(entities, True)
+    )
 
 
-class DiscogsSensor(SensorEntity):
-    """Create a new Discogs sensor for a specific type."""
+class DiscogsSensor(CoordinatorEntity[DiscogsCoordinator], SensorEntity):
+    """A Discogs sensor backed by the shared coordinator."""
 
     _attr_attribution = "Data provided by Discogs"
+    _attr_has_entity_name = True
 
     def __init__(
-        self, discogs_data, name, description: SensorEntityDescription
+        self,
+        coordinator: DiscogsCoordinator,
+        entry: DiscogsConfigEntry,
+        description: SensorEntityDescription,
+        enabled_default: bool,
     ) -> None:
-        """Initialize the Discogs sensor."""
+        """Initialize the sensor."""
+        super().__init__(coordinator)
         self.entity_description = description
-        self._discogs_data = discogs_data
-        self._attrs: dict = {}
-
-        self._attr_name = f"{name} {description.name}"
-
-    @property
-    def extra_state_attributes(self):
-        """Return the device state attributes of the sensor."""
-        if self._attr_native_value is None or self._attrs is None:
-            return None
-
-        if (
-            self.entity_description.key == SENSOR_RANDOM_RECORD_TYPE
-            and self._attr_native_value is not None
-        ):
-            return {
-                "cat_no": self._attrs["labels"][0]["catno"],
-                "cover_image": self._attrs["cover_image"],
-                "format": (
-                    f"{self._attrs['formats'][0]['name']} ({self._attrs['formats'][0]['descriptions'][0]})"
-                ),
-                "label": self._attrs["labels"][0]["name"],
-                "released": self._attrs["year"],
-                ATTR_IDENTITY: self._discogs_data["user"],
-            }
-
-        return {
-            ATTR_IDENTITY: self._discogs_data["user"],
-        }
-
-    def get_random_record(self):
-        """Get a random record suggestion from the user's collection."""
-        try:
-            collection = self._discogs_data["folders"][0]
-            if collection.count > 0:
-                random_index = random.randrange(collection.count)
-                random_record = collection.releases[random_index].release
-                self._attrs = random_record.data
-                return (
-                    f"{random_record.data['artists'][0]['name']} -"
-                    f" {random_record.data['title']}"
-                )
-        except (JSONDecodeError, RequestException) as err:
-            # A bad response fetching the release itself shouldn't blank
-            # the sensor - keep whatever it was showing before.
-            _LOGGER.warning(
-                "Failed to fetch a random record from Discogs, keeping previous value: %s",
-                err,
-            )
-            return self._attr_native_value
-        return None
-
-    def update(self) -> None:
-        """Refresh Discogs data and update sensor state."""
-        # Only hit the Discogs API if a sibling entity hasn't already
-        # refreshed the shared data within the last minute. Collection,
-        # Wantlist, and Random Record all call update() back-to-back on the
-        # same hourly scan - without this guard each one independently
-        # re-authenticates and re-fetches identity + collection_folders,
-        # tripling the calls and tripping Discogs' burst limit on the third.
-        now = dt_util.utcnow()
-        last_fetched = self._discogs_data.get("last_fetched")
-        needs_refresh = (
-            last_fetched is None or (now - last_fetched) > MIN_REFRESH_INTERVAL
+        self._attr_unique_id = f"{entry.unique_id}_{description.key}"
+        self._attr_entity_registry_enabled_default = enabled_default
+        self._attr_device_info = DeviceInfo(
+            configuration_url="https://www.discogs.com",
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, str(entry.unique_id))},
+            manufacturer=DEFAULT_NAME,
+            name=entry.title,
         )
 
-        if needs_refresh:
-            try:
-                _discogs_client = discogs_client.Client(
-                    SERVER_SOFTWARE, user_token=self._discogs_data["token"]
-                )
-                identity = _discogs_client.identity()
+    @property
+    def native_value(self) -> str | int | None:
+        """Return the state of the sensor."""
+        data = self.coordinator.data
+        key = self.entity_description.key
+        if key == SENSOR_COLLECTION_TYPE:
+            return data.collection_count
+        if key == SENSOR_WANTLIST_TYPE:
+            return data.wantlist_count
+        record = data.random_record
+        if not record:
+            return None
+        artists = record.get("artists") or [{}]
+        return f"{artists[0].get('name', 'Unknown artist')} - {record.get('title', '')}"
 
-                self._discogs_data["user"] = identity.name
-                self._discogs_data["folders"] = identity.collection_folders
-                self._discogs_data["collection_count"] = identity.num_collection
-                self._discogs_data["wantlist_count"] = identity.num_wantlist
-                self._discogs_data["last_fetched"] = now
-            except discogs_client.exceptions.HTTPError:
-                _LOGGER.error("Failed to refresh Discogs data: API token is not valid")
-                return
-            except (JSONDecodeError, RequestException) as err:
-                # A bad/empty response from Discogs is a WARNING, not an
-                # ERROR - log it and keep the last known-good data instead
-                # of crashing the update.
-                _LOGGER.warning(
-                    "Failed to refresh Discogs data, keeping last known values: %s",
-                    err,
-                )
-                if last_fetched is None:
-                    # Nothing to fall back to on the very first fetch.
-                    return
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the state attributes of the sensor."""
+        data = self.coordinator.data
+        attrs: dict[str, Any] = {ATTR_IDENTITY: data.user}
+        if self.entity_description.key != SENSOR_RANDOM_RECORD_TYPE:
+            return attrs
+        record = data.random_record
+        if not record:
+            return attrs
 
-        if self.entity_description.key == SENSOR_COLLECTION_TYPE:
-            self._attr_native_value = self._discogs_data["collection_count"]
-        elif self.entity_description.key == SENSOR_WANTLIST_TYPE:
-            self._attr_native_value = self._discogs_data["wantlist_count"]
-        elif self.entity_description.key == SENSOR_RANDOM_RECORD_TYPE:
-            self._attr_native_value = self.get_random_record()
+        labels = record.get("labels") or [{}]
+        formats = record.get("formats") or [{}]
+        fmt = formats[0].get("name", "")
+        if descriptions := formats[0].get("descriptions"):
+            fmt = f"{fmt} ({descriptions[0]})"
+        return {
+            "cat_no": labels[0].get("catno"),
+            "cover_image": record.get("cover_image"),
+            "format": fmt,
+            "label": labels[0].get("name"),
+            "released": record.get("year"),
+            **attrs,
+        }

@@ -1,0 +1,76 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This Discogs account is already configured",
+      "reauth_successful": "Re-authentication was successful",
+      "wrong_account": "That token belongs to a different Discogs account than the one being re-authenticated",
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "title": "Connect to Discogs",
+        "data": {
+          "token": "API token",
+          "name": "Name"
+        },
+        "data_description": {
+          "token": "Personal access token from your Discogs developer settings (discogs.com/settings/developers).",
+          "name": "Used for the device name and entity IDs. Keep the default \"Discogs\" to get sensor.discogs_collection, sensor.discogs_wantlist and sensor.discogs_random_record."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Discogs",
+        "description": "Discogs rejected the saved API token. Enter a new personal access token for the same account.",
+        "data": {
+          "token": "API token"
+        },
+        "data_description": {
+          "token": "Personal access token from your Discogs developer settings (discogs.com/settings/developers)."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Discogs options",
+        "data": {
+          "scan_interval_minutes": "Polling interval"
+        },
+        "data_description": {
+          "scan_interval_minutes": "How often to refresh counts and pick a new random record. Each refresh makes a few Discogs API calls."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "collection": {
+        "name": "Collection"
+      },
+      "random_record": {
+        "name": "Random record"
+      },
+      "wantlist": {
+        "name": "Wantlist"
+      }
+    }
+  },
+  "issues": {
+    "deprecated_yaml_import_issue_cannot_connect": {
+      "title": "The {integration_title} YAML configuration could not be imported",
+      "description": "Configuring {integration_title} via YAML is deprecated. While importing your YAML configuration, the Discogs API could not be reached. Restart Home Assistant to retry the import, or remove the `{domain}` sensor from your configuration and set up the integration from Settings > Devices & services."
+    },
+    "deprecated_yaml_import_issue_invalid_auth": {
+      "title": "The {integration_title} YAML configuration could not be imported",
+      "description": "Configuring {integration_title} via YAML is deprecated. While importing your YAML configuration, Discogs rejected the API token. Fix the token and restart Home Assistant to retry the import, or remove the `{domain}` sensor from your configuration and set up the integration from Settings > Devices & services."
+    }
+  }
+}
