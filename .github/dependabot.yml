@@ -6,6 +6,7 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "ci"
+    assignees: ["trevnologies"]
 
   - package-ecosystem: "pip"
     directory: "/"
@@ -13,3 +14,4 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "test"
+    assignees: ["trevnologies"]
