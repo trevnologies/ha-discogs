@@ -168,11 +168,13 @@ module.exports = async ({ github, context, core }) => {
 
   await ensureLabel({ github, owner, repo });
   if (open) {
+    // Mention the owner so follow-up batches notify them regardless of
+    // their watch setting on this repo.
     await github.rest.issues.createComment({
       owner,
       repo,
       issue_number: open.number,
-      body,
+      body: `@${owner} ${body}`,
     });
     core.info(`Commented on #${open.number}`);
   } else {
@@ -182,6 +184,9 @@ module.exports = async ({ github, context, core }) => {
       title: `Upstream ${path.split("/").pop()} changed in ${UPSTREAM.owner}/${UPSTREAM.repo}`,
       body,
       labels: [LABEL],
+      // Assigning the owner guarantees a notification, independent of
+      // their watch setting on this repo.
+      assignees: [owner],
     });
     core.info(`Opened #${data.number}`);
   }
