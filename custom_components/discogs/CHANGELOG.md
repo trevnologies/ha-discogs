@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.0
+
+**Requires Home Assistant 2026.11 or later.** HACS won't offer this release
+to older installs.
+
+### Changed
+- Ported from upstream (#24): home-assistant/core#186199. Setup and unload
+  return `None`, and unloading uses `async_unload_platforms_or_raise`, so a
+  failed unload is reported instead of passing silently.
+- Manifest `categories` (`media_entertainment.music_radio_services`) and
+  `connectivity` (`cloud`), matching core's Discogs integration.
+- Minimum Home Assistant version is now 2026.11.0.
+
+### Tests
+- The suite runs against Home Assistant 2026.11 and is skipped on the
+  current test harness (2026.10.4) until its 2026.11 release.
+
 ## 1.1.0
 
 ### Added
