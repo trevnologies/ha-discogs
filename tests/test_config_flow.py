@@ -21,7 +21,7 @@ from . import MOCK_TOKEN, MOCK_USER_ID
 @pytest.fixture(autouse=True)
 def skip_setup():
     """Don't actually set up entries created by the flow."""
-    with patch("custom_components.discogs.async_setup_entry", return_value=True):
+    with patch("custom_components.discogs.async_setup_entry", return_value=None):
         yield
 
 
